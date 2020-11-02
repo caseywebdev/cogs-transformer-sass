@@ -1,6 +1,10 @@
-const _ = require('underscore');
-const npath = require('npath');
-const sass = require('node-sass');
+import npath from 'path';
+import { promisify } from 'util';
+
+import sass from 'node-sass';
+import _ from 'underscore';
+
+const render = promisify(sass.render);
 
 const DEFAULTS = {
   includePaths: [],
@@ -9,29 +13,21 @@ const DEFAULTS = {
 
 const getRelative = path => npath.relative('.', path);
 
-module.exports = ({file: {buffer, links, path}, options}) =>
-  new Promise((resolve, reject) => {
-
-    // Merge default options with user-defined options.
-    options = _.extend({}, DEFAULTS, options);
-    sass.render(_.extend(options, {
-
-      // node-sass chokes on empty strings, so provide at least a single space.
-      data: `${buffer.toString()} `,
-
-      // Always concat the file path so relative @imports work correctly.
+export default async ({ file: { buffer, links, path }, options }) => {
+  options = { ...DEFAULTS, ...options };
+  try {
+    const { css, stats } = await render({
+      ...options,
+      data: buffer.toString() || '\n',
       includePaths: options.includePaths.concat(npath.dirname(path))
-    }), function (er, res) {
-      if (er) {
-        return reject(_.extend(new Error(), er, {
-          message:
-            `${path}: line ${er.line}, column ${er.column}, ${er.message}`
-        }));
-      }
-
-      resolve({
-        buffer: new Buffer(res.css),
-        links: links.concat(_.map(res.stats.includedFiles, getRelative))
-      });
     });
-  });
+    return {
+      buffer: Buffer.from(css),
+      links: links.concat(_.map(stats.includedFiles, getRelative))
+    };
+  } catch (er) {
+    throw _.extend(new Error(), er, {
+      message: `${path}: line ${er.line}, column ${er.column}, ${er.message}`
+    });
+  }
+};

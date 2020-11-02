@@ -1,7 +1,7 @@
-var helper = require('cogs-test-helper');
+import helper from 'cogs-test-helper';
 
-helper.run({
-  'test/config.json': {
+export default helper.createTests({
+  'test/config.js': {
     'test/foo.sass': helper.getFileBuffer('test/output.css'),
     'test/empty.sass': helper.getFileBuffer('test/empty.sass'),
     'test/error.sass': Error
