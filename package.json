@@ -1,6 +1,6 @@
 {
   "name": "cogs-transformer-sass",
-  "version": "4.1.0",
+  "version": "4.2.0",
   "author": "Casey Foster <c@sey.me>",
   "description": "A Sass transformer for Cogs.",
   "license": "MIT",

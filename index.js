@@ -1,26 +1,21 @@
 import npath from 'path';
-import { promisify } from 'util';
 
-import sass from 'sass';
+import { compileString } from 'sass';
 
-const render = promisify(sass.render);
+const { Buffer } = globalThis;
 
-const DEFAULTS = {
-  includePaths: [],
-  indentedSyntax: false
-};
+const defaults = { loadPaths: [] };
 
-const getRelative = path => npath.relative('.', path);
+const getRelative = url => npath.relative('.', url.pathname);
 
 export default async ({ file: { buffer, links, path }, options }) => {
-  options = { ...DEFAULTS, ...options };
-  const { css, stats } = await render({
+  options = { ...defaults, ...options };
+  const { css, loadedUrls } = compileString(buffer.toString() || '\n', {
     ...options,
-    data: buffer.toString() || '\n',
-    includePaths: options.includePaths.concat(npath.dirname(path))
+    loadPaths: options.loadPaths.concat(npath.dirname(path))
   });
   return {
     buffer: Buffer.from(css),
-    links: links.concat(stats.includedFiles.map(getRelative))
+    links: links.concat(loadedUrls.map(getRelative))
   };
 };
